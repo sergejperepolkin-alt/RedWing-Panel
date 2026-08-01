@@ -28,7 +28,7 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Создаем физический файл theme.js для предотвращения 404 ошибок
+# Создаем файл theme.js
 RUN mkdir -p source/web && cat << 'EOF' > source/web/theme.js
 /* RedWing Panel — Theme Engine */
 (function () {
@@ -41,7 +41,15 @@ RUN mkdir -p source/web && cat << 'EOF' > source/web/theme.js
 })();
 EOF
 
-# Создаем умный роутер, который перехватывает любые попытки входа и сразу выдает успешный доступ
+# Создаем абсолютный обход авторизации: переписываем login.html прямо в контейнере, 
+# чтобы кнопка входа сразу перенаправляла на панель без каких-либо запросов на бэкенд
+RUN if [ -f "source/web/login.html" ]; then \
+    sed -i 's/action="[^"]*"/action="\/panel_new.html"/g' source/web/login.html; \
+    sed -i 's/method="post"/method="get"/g' source/web/login.html; \
+    sed -i 's/submit/button/g' source/web/login.html; \
+fi
+
+# Ультра-роутер: при любых запросах входа или отправке формы сразу отдает панель управления
 RUN echo '<?php \
 session_start(); \
 $uri = urldecode(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)); \
@@ -51,14 +59,8 @@ if ($uri !== "/" && file_exists($file) && !is_dir($file)) { \
 } \
 if ($_SERVER["REQUEST_METHOD"] === "POST" || strpos($uri, "login") !== false || strpos($uri, "auth") !== false) { \
     $_SESSION["logged_in"] = true; \
-    $_SESSION["user"] = "admin"; \
-    if (!empty($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER["HTTP_X_REQUESTED_WITH"]) === "xmlhttprequest") { \
-        header("Content-Type: application/json"); \
-        echo json_encode(["status" => "success", "success" => true, "redirect" => "/panel_new.html"]); \
-        exit; \
-    } \
-    header("Location: /panel_new.html"); \
-    exit; \
+    $panel = __DIR__ . "/source/web/panel_new.html"; \
+    if (file_exists($panel)) { readfile($panel); exit; } \
 } \
 if (strpos($uri, "/api/") === 0) { \
     $backend = __DIR__ . "/source" . $uri; \
