@@ -1,24 +1,30 @@
-# Базовый образ с поддержкой Go
-FROM golang:1.21-bullseye
+# Используем базовый образ Ubuntu (чистая система)
+FROM ubuntu:22.04
 
-# Устанавливаем Java (нужна для apktool) и wget
-RUN apt-get update && apt-get install -y default-jre wget
+# Отключаем интерактивные запросы при установке программ
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Скачиваем apktool
+# Устанавливаем Java (JRE), wget и другие необходимые утилиты
+RUN apt-get update && apt-get install -y \
+    default-jre \
+    wget \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Скачиваем и устанавливаем apktool
 RUN wget https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O /usr/local/bin/apktool
 RUN wget https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar -O /usr/local/bin/apktool.jar
 RUN chmod +x /usr/local/bin/apktool /usr/local/bin/apktool.jar
 
-# Рабочая директория
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем весь проект
+# Копируем все файлы вашего проекта
 COPY . .
 
-# Если go.mod нет, создаем его автоматически и собираем проект
-RUN go mod init redwing-panel || true
-RUN go mod tidy || true
-RUN go build -o main .
+# Если ваш проект на Node.js, можно раскомментировать строчки ниже:
+# RUN apt-get update && apt-get install -y nodejs npm
+# RUN npm install
 
-# Запуск приложения
-CMD ["./main"]
+# Команда для запуска вашего приложения (замените на вашу, если нужно)
+CMD ["./start.sh"]
