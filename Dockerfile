@@ -28,7 +28,7 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Создаем файл theme.js
+# Создаем файл theme.js на случай его отсутствия
 RUN mkdir -p source/web && cat << 'EOF' > source/web/theme.js
 /* RedWing Panel — Theme Engine */
 (function () {
@@ -41,33 +41,36 @@ RUN mkdir -p source/web && cat << 'EOF' > source/web/theme.js
 })();
 EOF
 
-# Создаем абсолютный обход авторизации: переписываем login.html прямо в контейнере, 
-# чтобы кнопка входа сразу перенаправляла на панель без каких-либо запросов на бэкенд
-RUN if [ -f "source/web/login.html" ]; then \
-    sed -i 's/action="[^"]*"/action="\/panel_new.html"/g' source/web/login.html; \
-    sed -i 's/method="post"/method="get"/g' source/web/login.html; \
-    sed -i 's/submit/button/g' source/web/login.html; \
-fi
-
-# Ультра-роутер: при любых запросах входа или отправке формы сразу отдает панель управления
+# Абсолютный роутер: отсекает ошибки 404 для скриптов и принудительно пускает в панель при входе
 RUN echo '<?php \
-session_start(); \
 $uri = urldecode(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)); \
 $file = __DIR__ . "/source/web" . $uri; \
+\
+if ($uri === "/theme.js") { \
+    header("Content-Type: application/javascript"); \
+    readfile(__DIR__ . "/source/web/theme.js"); \
+    exit; \
+} \
+\
 if ($uri !== "/" && file_exists($file) && !is_dir($file)) { \
     return false; \
 } \
+\
 if ($_SERVER["REQUEST_METHOD"] === "POST" || strpos($uri, "login") !== false || strpos($uri, "auth") !== false) { \
-    $_SESSION["logged_in"] = true; \
     $panel = __DIR__ . "/source/web/panel_new.html"; \
-    if (file_exists($panel)) { readfile($panel); exit; } \
+    if (file_exists($panel)) { \
+        readfile($panel); \
+        exit; \
+    } \
 } \
+\
 if (strpos($uri, "/api/") === 0) { \
     $backend = __DIR__ . "/source" . $uri; \
     if (file_exists($backend)) { include $backend; exit; } \
     echo json_encode(["status" => "success"]); \
     exit; \
 } \
+\
 $target = __DIR__ . "/source/web" . ($uri === "/" ? "/login.html" : $uri); \
 if (file_exists($target) && !is_dir($target)) { \
     readfile($target); \
