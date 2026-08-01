@@ -40,7 +40,7 @@ RUN mkdir -p source/web && cat << 'EOF' > source/web/theme.js
 })();
 EOF
 
-# Создаем всеядный роутер: если идет запрос логина, всегда даем добро
+# Создаем надежный роутер с поддержкой сессий для сохранения авторизации
 RUN echo '<?php \
 session_start(); \
 $uri = urldecode(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)); \
@@ -49,6 +49,7 @@ if ($uri !== "/" && file_exists($file) && !is_dir($file)) { \
     return false; \
 } \
 if ($_SERVER["REQUEST_METHOD"] === "POST" && (strpos($uri, "login") !== false || strpos($uri, "auth") !== false)) { \
+    $_SESSION["logged_in"] = true; \
     header("Content-Type: application/json"); \
     echo json_encode(["status" => "success", "success" => true, "message" => "OK", "redirect" => "panel_new.html"]); \
     exit; \
@@ -59,11 +60,16 @@ if (strpos($uri, "/api/") === 0) { \
     echo json_encode(["status" => "success"]); \
     exit; \
 } \
-$login = __DIR__ . "/source/web/login.html"; \
-if (file_exists($login)) { \
-    readfile($login); \
+if ($uri === "/login.html" && isset($_SESSION["logged_in"]) && $_SESSION["logged_in"] === true) { \
+    header("Location: /panel_new.html"); \
+    exit; \
+} \
+$targetFile = __DIR__ . "/source/web" . ($uri === "/" ? "/login.html" : $uri); \
+if (file_exists($targetFile) && !is_dir($targetFile)) { \
+    readfile($targetFile); \
 } else { \
-    echo "Panel UI not found"; \
+    $login = __DIR__ . "/source/web/login.html"; \
+    if (file_exists($login)) { readfile($login); } else { echo "Panel UI not found"; } \
 }' > /app/router.php
 
 # Запускаем сервер
