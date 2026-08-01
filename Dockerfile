@@ -27,5 +27,18 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Запускаем PHP-сервер прямо из папки source/web, где лежит интерфейс
-CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t source/web"]
+# Создаем index.php как роутер, который отдает статику из source/web и проксирует API в бэкенд
+RUN echo '<?php \
+$uri = urldecode(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)); \
+$file = __DIR__ . "/source/web" . $uri; \
+if ($uri !== "/" && file_exists($file) && !is_dir($file)) { \
+    return false; \
+} \
+if (file_exists(__DIR__ . "/source/web/login.html")) { \
+    include __DIR__ . "/source/web/login.html"; \
+} else { \
+    echo "Panel UI not found"; \
+}' > /app/index.php
+
+# Запускаем PHP-сервер на корневую папку /app с портом Render
+CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t /app"]
