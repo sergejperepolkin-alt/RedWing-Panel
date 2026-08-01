@@ -2,9 +2,15 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Устанавливаем системные зависимости, Java и wget
+# Устанавливаем системные зависимости, Java, PHP и wget
 RUN apt-get update && apt-get install -y \
     default-jre \
+    php \
+    php-cli \
+    php-mbstring \
+    php-xml \
+    php-zip \
+    php-mysql \
     wget \
     git \
     ca-certificates \
@@ -20,5 +26,8 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Ищем start.sh, делаем его исполняемым и запускаем
-CMD ["bash", "-c", "find . -name 'start.sh' -exec chmod +x {} \\; -exec {} \\;"]
+# Делаем скрипт исполняемым
+RUN chmod +x start.sh
+
+# Запускаем ваш стартовый скрипт
+CMD ["./start.sh"]
