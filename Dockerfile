@@ -15,12 +15,15 @@ RUN wget https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/li
 RUN wget https://github.com/iBotPeaches/Apktool/releases/download/v2.9.3/apktool_2.9.3.jar -O /usr/local/bin/apktool.jar
 RUN chmod +x /usr/local/bin/apktool /usr/local/bin/apktool.jar
 
-# Копируем файлы проекта в директорию веб-сервера Apache
+# Копируем проект
 COPY . /var/www/html/
+
+# --- ПЕРЕНАПРАВЛЯЕМ APACHE ВНУТРЬ ПАПКИ С ПРОЕКТОМ ---
+# (Замените "RedWing" или название вашей папки, если она называется иначе)
+RUN sed -i 's!/var/www/html!/var/www/html/название_папки!g' /etc/apache2/sites-available/000-default.conf
 
 # Настраиваем права
 WORKDIR /var/www/html
 RUN chown -R www-data:www-data /var/www/html
 
-# Порт, который слушает Apache
 EXPOSE 80
