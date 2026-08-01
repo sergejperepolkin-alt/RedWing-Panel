@@ -2,20 +2,22 @@ FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-# Копируем весь репозиторий целиком, чтобы найти go.mod в любой подпапке
+# Копируем зависимости
+COPY go.mod go.sum* ./
+RUN go mod download
+
+# Копируем весь код проекта
 COPY . .
 
-# Если go.mod лежит в подпапке (например, в source/), переходим туда для сборки
-# Если go.mod в корне, эта команда просто выполнится в /app
-RUN find . -name "go.mod" -execdir go mod download \;
-RUN find . -name "go.mod" -execdir go build -o /app/main . \;
+# Собираем бинарник бэкенда
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
-# Финальный лёгкий образ
+# Финальный лёгкий образ для запуска
 FROM alpine:latest
 
 WORKDIR /app
 
-# Копируем скомпилированный бинарник и файлы проекта
+# Переносим скомпилированное приложение и статику
 COPY --from=builder /app/main .
 COPY --from=builder /app/source ./source
 
