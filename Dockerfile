@@ -1,30 +1,25 @@
-# Этап сборки (Build stage)
 FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-# Копируем зависимости
-COPY go.mod go.sum* ./
-RUN go mod download
-
-# Копируем весь исходный код
+# Копируем весь репозиторий целиком, чтобы найти go.mod в любой подпапке
 COPY . .
 
-# Собираем бинарник (замени main.go на главный файл твоего бэкенда на Go, если он называется иначе)
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+# Если go.mod лежит в подпапке (например, в source/), переходим туда для сборки
+# Если go.mod в корне, эта команда просто выполнится в /app
+RUN find . -name "go.mod" -execdir go mod download \;
+RUN find . -name "go.mod" -execdir go build -o /app/main . \;
 
 # Финальный лёгкий образ
 FROM alpine:latest
 
 WORKDIR /app
 
-# Копируем скомпилированный бинарник и статику (если нужно)
+# Копируем скомпилированный бинарник и файлы проекта
 COPY --from=builder /app/main .
 COPY --from=builder /app/source ./source
 
-# Указываем порт из переменной окружения Render
 ENV PORT=10000
 EXPOSE 10000
 
-# Запускаем скомпилированный Go-файл
 CMD ["./main"]
