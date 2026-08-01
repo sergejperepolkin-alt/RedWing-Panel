@@ -1,30 +1,24 @@
-# Используем базовый образ Ubuntu (чистая система)
 FROM ubuntu:22.04
 
-# Отключаем интерактивные запросы при установке программ
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Устанавливаем Java (JRE), wget и другие необходимые утилиты
+# Устанавливаем Java (нужна для apktool), wget и ca-certificates
 RUN apt-get update && apt-get install -y \
     default-jre \
     wget \
-    git \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Скачиваем и устанавливаем apktool
+# Скачиваем официальную оболочку apktool
 RUN wget https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O /usr/local/bin/apktool
-RUN wget https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar -O /usr/local/bin/apktool.jar
+
+# Скачиваем актуальный .jar файл apktool (версия 2.9.3 с GitHub)
+RUN wget https://github.com/iBotPeaches/Apktool/releases/download/v2.9.3/apktool_2.9.3.jar -O /usr/local/bin/apktool.jar
+
+# Делаем файлы исполняемыми
 RUN chmod +x /usr/local/bin/apktool /usr/local/bin/apktool.jar
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
-
-# Копируем все файлы вашего проекта
 COPY . .
 
-# Если ваш проект на Node.js, можно раскомментировать строчки ниже:
-# RUN apt-get update && apt-get install -y nodejs npm
-# RUN npm install
-
-# Команда для запуска вашего приложения (замените на вашу, если нужно)
 CMD ["./start.sh"]
