@@ -26,5 +26,5 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Находим папку с index.php или index.html и запускаем PHP-сервер оттуда
-CMD ["bash", "-c", "INDEX_FILE=$(find . -name 'index.php' -o -name 'index.html' | head -n 1); if [ -n \"$INDEX_FILE\" ]; then WEB_DIR=$(dirname \"$INDEX_FILE\"); else WEB_DIR='.'; fi; echo 'Serving from: ' $WEB_DIR; php -S 0.0.0.0:$PORT -t \"$WEB_DIR\""]
+# Выводим структуру папок в лог сборки для отладки и запускаем сервер
+CMD ["bash", "-c", "echo '=== REPO STRUCTURE ===' && find . -maxdepth 3 && echo '======================' && php -S 0.0.0.0:$PORT -t source/web"]
