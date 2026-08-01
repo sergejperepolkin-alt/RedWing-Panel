@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Устанавливаем системные зависимости, Java, PHP и wget
+# Устанавливаем системные зависимости, Java, PHP и модули для работы с БД
 RUN apt-get update && apt-get install -y \
     default-jre \
     php \
@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     php-xml \
     php-zip \
     php-mysql \
+    php-curl \
     wget \
     git \
     ca-certificates \
@@ -26,8 +27,5 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Если в source/web нет index.html/index.php, но есть login.html, делаем его главной страницей
-RUN if [ ! -f source/web/index.html ] && [ ! -f source/web/index.php ] && [ -f source/web/login.html ]; then cp source/web/login.html source/web/index.html; fi
-
-# Запускаем сервер из source/web на порту Render
-CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t source/web"]
+# Запускаем встроенный PHP-сервер на корневую папку source, чтобы работали и API, и веб-интерфейс
+CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t source"]
