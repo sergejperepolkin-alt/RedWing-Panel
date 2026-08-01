@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Устанавливаем системные зависимости, Java, PHP и модули для работы с БД
+# Устанавливаем системные зависимости, Java, PHP и модули
 RUN apt-get update && apt-get install -y \
     default-jre \
     php \
@@ -27,5 +27,5 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Запускаем встроенный PHP-сервер на корневую папку source, чтобы работали и API, и веб-интерфейс
-CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t source"]
+# Запускаем PHP-сервер прямо из папки source/web, где лежит интерфейс
+CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t source/web"]
