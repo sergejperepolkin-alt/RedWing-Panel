@@ -15,8 +15,11 @@ RUN wget https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/li
 RUN wget https://github.com/iBotPeaches/Apktool/releases/download/v2.9.3/apktool_2.9.3.jar -O /usr/local/bin/apktool.jar
 RUN chmod +x /usr/local/bin/apktool /usr/local/bin/apktool.jar
 
-# Копируем проект в корень веб-сервера Apache
-COPY . /var/www/html/
+# Копируем весь проект во временную папку контейнера
+COPY . /app-source
+
+# Переносим файлы из source/web прямо в корень веб-сервера Apache
+RUN rm -rf /var/www/html/* && cp -r /app-source/source/web/. /var/www/html/
 
 # Настраиваем права доступа
 WORKDIR /var/www/html
