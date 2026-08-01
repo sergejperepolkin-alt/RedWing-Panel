@@ -1,27 +1,24 @@
-FROM php:8.1-apache
+FROM ubuntu:22.04
 
-# Устанавливаем системные зависимости, Java (для apktool) и wget
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Устанавливаем системные зависимости, Java и wget
 RUN apt-get update && apt-get install -y \
     default-jre \
     wget \
     git \
-    libzip-dev \
-    zip \
-    && docker-php-ext-install zip pdo pdo_mysql \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Скачиваем и устанавливаем apktool
+# Устанавливаем apktool
 RUN wget https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool -O /usr/local/bin/apktool
 RUN wget https://github.com/iBotPeaches/Apktool/releases/download/v2.9.3/apktool_2.9.3.jar -O /usr/local/bin/apktool.jar
 RUN chmod +x /usr/local/bin/apktool /usr/local/bin/apktool.jar
 
-# Копируем содержимое папки source/web прямо в корень Apache
-COPY source/web/ /var/www/html/
+WORKDIR /app
 
-# Настраиваем права доступа и разрешаем .htaccess (если нужен для роутинга)
-WORKDIR /var/www/html
-RUN chown -R www-data:www-data /var/www/html \
-    && sed -i '/<Directory \/var\/www\/html>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf \
-    && a2enmod rewrite
+# Копируем весь репозиторий
+COPY . .
 
-EXPOSE 80
+# Ищем start.sh, делаем его исполняемым и запускаем
+CMD ["bash", "-c", "find . -name 'start.sh' -exec chmod +x {} \\; -exec {} \\;"]
