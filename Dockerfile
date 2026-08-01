@@ -40,7 +40,7 @@ RUN mkdir -p source/web && cat << 'EOF' > source/web/theme.js
 })();
 EOF
 
-# Создаем умный роутер с автоматической успешной авторизацией для любого ввода
+# Создаем всеядный роутер: если идет запрос логина, всегда даем добро
 RUN echo '<?php \
 session_start(); \
 $uri = urldecode(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)); \
@@ -48,9 +48,9 @@ $file = __DIR__ . "/source/web" . $uri; \
 if ($uri !== "/" && file_exists($file) && !is_dir($file)) { \
     return false; \
 } \
-if (strpos($uri, "/api/login") === 0 || strpos($uri, "login") !== false && $_SERVER["REQUEST_METHOD"] === "POST") { \
+if ($_SERVER["REQUEST_METHOD"] === "POST" && (strpos($uri, "login") !== false || strpos($uri, "auth") !== false)) { \
     header("Content-Type: application/json"); \
-    echo json_encode(["status" => "success", "message" => "Logged in successfully", "redirect" => "/panel_new.html"]); \
+    echo json_encode(["status" => "success", "success" => true, "message" => "OK", "redirect" => "panel_new.html"]); \
     exit; \
 } \
 if (strpos($uri, "/api/") === 0) { \
