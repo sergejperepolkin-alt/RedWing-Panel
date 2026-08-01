@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-# Ищем папку, где лежит main.go, и собираем проект оттуда
+# Ищем настоящий go.mod или собираем из папки, где лежит main.go, с правильным именем модуля
 RUN set -ex; \
     MAIN_PATH=$(find . -name "main.go" | head -n 1); \
     if [ -z "$MAIN_PATH" ]; then \
@@ -14,7 +14,7 @@ RUN set -ex; \
     BUILD_DIR=$(dirname "$MAIN_PATH"); \
     cd "$BUILD_DIR"; \
     if [ ! -f "go.mod" ]; then \
-        go mod init redwingapp; \
+        go mod init redwing; \
     fi; \
     go build -o /app/main .
 
