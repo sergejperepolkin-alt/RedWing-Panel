@@ -26,5 +26,5 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Запускаем встроенный PHP-сервер прямо из папки source/web на порту Render
-CMD ["php", "-S", "0.0.0.0:10000", "-t", "source/web"]
+# Динамически подхватываем порт Render и запускаем PHP из папки source/web
+CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t source/web"]
