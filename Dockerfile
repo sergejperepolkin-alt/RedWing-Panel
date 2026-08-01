@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Устанавливаем системные зависимости, Java (для apktool) и wget
+# Устанавливаем системные зависимости, Java и wget
 RUN apt-get update && apt-get install -y \
     default-jre \
     wget \
@@ -20,8 +20,5 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Даем права на запуск вашего скрипта
-RUN chmod +x start.sh
-
-# Запускаем оригинальный скрипт запуска
-CMD ["./start.sh"]
+# Ищем start.sh внутри подпапок репозитория и запускаем его
+CMD ["bash", "-c", "find . -name 'start.sh' -exec chmod +x {} \\; -exec {} \\;"]
