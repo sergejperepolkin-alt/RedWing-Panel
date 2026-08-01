@@ -4,16 +4,19 @@ WORKDIR /app
 
 COPY . .
 
-# Абсолютно безошибочная сборка Go: проверяем корень и папки, если go.mod отсутствует, создаем его на лету
+# Ищем папку, где лежит main.go, и собираем проект оттуда
 RUN set -ex; \
-    if [ -f "go.mod" ]; then \
-        go build -o /app/main .; \
-    elif [ -f "source/go.mod" ]; then \
-        cd source && go build -o /app/main .; \
-    else \
+    MAIN_PATH=$(find . -name "main.go" | head -n 1); \
+    if [ -z "$MAIN_PATH" ]; then \
+        echo "main.go not found"; \
+        exit 1; \
+    fi; \
+    BUILD_DIR=$(dirname "$MAIN_PATH"); \
+    cd "$BUILD_DIR"; \
+    if [ ! -f "go.mod" ]; then \
         go mod init redwingapp; \
-        go build -o /app/main .; \
-    fi
+    fi; \
+    go build -o /app/main .
 
 FROM alpine:latest
 
