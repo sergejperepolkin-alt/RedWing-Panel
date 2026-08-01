@@ -28,9 +28,9 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Создаем файл theme.js
+# Создаем физический файл theme.js в нужной папке, чтобы убрать ошибку 404
 RUN mkdir -p source/web && cat << 'EOF' > source/web/theme.js
-/* RedWing Panel — Theme Engine */
+/* RedWing Panel — Theme Engine + Customizer Widget */
 (function () {
     'use strict';
     var STORAGE_KEY = 'rw_theme';
@@ -41,10 +41,9 @@ RUN mkdir -p source/web && cat << 'EOF' > source/web/theme.js
 })();
 EOF
 
-# Инициализируем базу данных и создаем администратора (логин: admin, пароль: admin)
+# Создаем базу данных и учетную запись admin / admin
 RUN mkdir -p source/database && php -r ' \
-    $dbFile = "source/database/database.sqlite"; \
-    $db = new PDO("sqlite:" . $dbFile); \
+    $db = new PDO("sqlite:source/database/database.sqlite"); \
     $db->exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)"); \
     $stmt = $db->prepare("SELECT COUNT(*) FROM users"); \
     $stmt->execute(); \
@@ -54,7 +53,7 @@ RUN mkdir -p source/database && php -r ' \
     } \
 ' || true
 
-# Стандартный роутер для передачи запросов на оригинальный бэкенд
+# Стандартный роутер
 RUN echo '<?php \
 $uri = urldecode(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)); \
 $file = __DIR__ . "/source/web" . $uri; \
