@@ -4,14 +4,15 @@ WORKDIR /app
 
 COPY . .
 
-# Автоматически ищем папку, где лежит go.mod, переходим в неё, инициализируем модуль если его нет, и собираем проект
+# Исправление: go.mod лежит в ./source, но сам Go-код бэкенда находится чуть глубже или в подпапках source, ищем файл .go
 RUN set -ex; \
-    MOD_DIR=$(dirname $(find . -name "go.mod" | head -n 1)); \
-    if [ "$MOD_DIR" = "." ] || [ -z "$MOD_DIR" ]; then \
+    GO_FILE_DIR=$(dirname $(find . -name "*.go" | head -n 1)); \
+    if [ "$GO_FILE_DIR" = "." ] || [ -z "$GO_FILE_DIR" ]; then \
         if [ ! -f "go.mod" ]; then go mod init redwingapp; fi; \
         go build -o /app/main .; \
     else \
-        cd "$MOD_DIR"; \
+        cd "$GO_FILE_DIR"; \
+        if [ ! -f "go.mod" ] && [ ! -f "../go.mod" ]; then go mod init redwingapp; fi; \
         go build -o /app/main .; \
     fi
 
@@ -20,7 +21,6 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/main .
-# Копируем статику из корня или из той же папки, где исходники
 COPY --from=builder /app/source ./source
 
 ENV PORT=10000
