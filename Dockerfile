@@ -17,6 +17,10 @@ RUN chmod +x /usr/local/bin/apktool /usr/local/bin/apktool.jar
 WORKDIR /app
 COPY . .
 
+# Создаем go.mod, если его нет, и подтягиваем зависимости
+RUN go mod init redwing-panel || true
+RUN go mod tidy || true
+
 # Собираем Go-приложение прямо внутри контейнера
 RUN go build -o main .
 
