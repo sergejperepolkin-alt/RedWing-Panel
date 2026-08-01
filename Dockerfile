@@ -27,18 +27,23 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Создаем index.php как роутер, который отдает статику из source/web и проксирует API в бэкенд
+# Создаем умный роутер, который отдает HTML-файлы и перенаправляет API-запросы на бэкенд
 RUN echo '<?php \
 $uri = urldecode(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)); \
 $file = __DIR__ . "/source/web" . $uri; \
 if ($uri !== "/" && file_exists($file) && !is_dir($file)) { \
     return false; \
 } \
-if (file_exists(__DIR__ . "/source/web/login.html")) { \
-    include __DIR__ . "/source/web/login.html"; \
+if (strpos($uri, "/api/") === 0) { \
+    $backend = __DIR__ . "/source" . $uri; \
+    if (file_exists($backend)) { include $backend; exit; } \
+} \
+$login = __DIR__ . "/source/web/login.html"; \
+if (file_exists($login)) { \
+    readfile($login); \
 } else { \
     echo "Panel UI not found"; \
-}' > /app/index.php
+}' > /app/router.php
 
-# Запускаем PHP-сервер на корневую папку /app с портом Render
-CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t /app"]
+# Запускаем встроенный PHP-сервер с роутером
+CMD ["sh", "-c", "php -S 0.0.0.0:$PORT router.php"]
