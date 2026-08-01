@@ -26,5 +26,8 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Выводим структуру папок в лог сборки для отладки и запускаем сервер
-CMD ["bash", "-c", "echo '=== REPO STRUCTURE ===' && find . -maxdepth 3 && echo '======================' && php -S 0.0.0.0:$PORT -t source/web"]
+# Если в source/web нет index.html/index.php, но есть login.html, делаем его главной страницей
+RUN if [ ! -f source/web/index.html ] && [ ! -f source/web/index.php ] && [ -f source/web/login.html ]; then cp source/web/login.html source/web/index.html; fi
+
+# Запускаем сервер из source/web на порту Render
+CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t source/web"]
