@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     php-xml \
     php-zip \
     php-mysql \
+    php-sqlite3 \
     php-curl \
     wget \
     git \
@@ -40,36 +41,35 @@ RUN mkdir -p source/web && cat << 'EOF' > source/web/theme.js
 })();
 EOF
 
-# Создаем надежный роутер с поддержкой сессий для сохранения авторизации
+# Инициализируем базу данных и создаем администратора (логин: admin, пароль: admin)
+RUN mkdir -p source/database && php -r ' \
+    $dbFile = "source/database/database.sqlite"; \
+    $db = new PDO("sqlite:" . $dbFile); \
+    $db->exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)"); \
+    $stmt = $db->prepare("SELECT COUNT(*) FROM users"); \
+    $stmt->execute(); \
+    if ($stmt->fetchColumn() == 0) { \
+        $stmt = $db->prepare("INSERT INTO users (username, password) VALUES (?, ?)"); \
+        $stmt->execute(["admin", password_hash("admin", PASSWORD_DEFAULT)]); \
+    } \
+' || true
+
+# Стандартный роутер для передачи запросов на оригинальный бэкенд
 RUN echo '<?php \
-session_start(); \
 $uri = urldecode(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)); \
 $file = __DIR__ . "/source/web" . $uri; \
 if ($uri !== "/" && file_exists($file) && !is_dir($file)) { \
     return false; \
 } \
-if ($_SERVER["REQUEST_METHOD"] === "POST" && (strpos($uri, "login") !== false || strpos($uri, "auth") !== false)) { \
-    $_SESSION["logged_in"] = true; \
-    header("Content-Type: application/json"); \
-    echo json_encode(["status" => "success", "success" => true, "message" => "OK", "redirect" => "panel_new.html"]); \
-    exit; \
-} \
 if (strpos($uri, "/api/") === 0) { \
     $backend = __DIR__ . "/source" . $uri; \
     if (file_exists($backend)) { include $backend; exit; } \
-    echo json_encode(["status" => "success"]); \
-    exit; \
 } \
-if ($uri === "/login.html" && isset($_SESSION["logged_in"]) && $_SESSION["logged_in"] === true) { \
-    header("Location: /panel_new.html"); \
-    exit; \
-} \
-$targetFile = __DIR__ . "/source/web" . ($uri === "/" ? "/login.html" : $uri); \
-if (file_exists($targetFile) && !is_dir($targetFile)) { \
-    readfile($targetFile); \
+$login = __DIR__ . "/source/web/login.html"; \
+if (file_exists($login)) { \
+    readfile($login); \
 } else { \
-    $login = __DIR__ . "/source/web/login.html"; \
-    if (file_exists($login)) { readfile($login); } else { echo "Panel UI not found"; } \
+    echo "Panel UI not found"; \
 }' > /app/router.php
 
 # Запускаем сервер
