@@ -4,15 +4,15 @@ WORKDIR /app
 
 COPY . .
 
-# Исправление: go.mod лежит в ./source, но сам Go-код бэкенда находится чуть глубже или в подпапках source, ищем файл .go
+# Исправление: находим директорию, где реально лежит корневой go.mod проекта, и собираем модуль оттуда
 RUN set -ex; \
-    GO_FILE_DIR=$(dirname $(find . -name "*.go" | head -n 1)); \
-    if [ "$GO_FILE_DIR" = "." ] || [ -z "$GO_FILE_DIR" ]; then \
-        if [ ! -f "go.mod" ]; then go mod init redwingapp; fi; \
+    MOD_PATH=$(find . -name "go.mod" | head -n 1); \
+    if [ -z "$MOD_PATH" ]; then \
+        go mod init redwingapp; \
         go build -o /app/main .; \
     else \
-        cd "$GO_FILE_DIR"; \
-        if [ ! -f "go.mod" ] && [ ! -f "../go.mod" ]; then go mod init redwingapp; fi; \
+        MOD_DIR=$(dirname "$MOD_PATH"); \
+        cd "$MOD_DIR"; \
         go build -o /app/main .; \
     fi
 
