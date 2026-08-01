@@ -26,8 +26,5 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Делаем скрипт исполняемым
-RUN chmod +x start.sh
-
-# Запускаем ваш стартовый скрипт
-CMD ["./start.sh"]
+# Автоматически ищем папку с веб-файлами (source/web) и запускаем PHP-сервер на порту Render
+CMD ["bash", "-c", "WEB_DIR=$(find . -type d -name 'web' | head -n 1); if [ -z \"$WEB_DIR\" ]; then WEB_DIR='.'; fi; php -S 0.0.0.0:${PORT:-10000} -t \"$WEB_DIR\""]
