@@ -11,18 +11,16 @@ RUN wget https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar -
 # Делаем файлы исполняемыми
 RUN chmod +x /usr/local/bin/apktool /usr/local/bin/apktool.jar
 
-# Устанавливаем рабочую директорию
+# Копируем весь проект
 WORKDIR /app
-
-# Копируем файлы вашего проекта
 COPY . .
 
-# --- НОВЫЕ СТРОКИ: Создаем go.mod и подтягиваем зависимости, если их нет ---
-RUN go mod init redwing-panel || true
-RUN go mod tidy || true
+# Переходим внутрь папки с кодом (если она называется RedWing)
+WORKDIR /app/RedWing
 
-# Собираем ваш проект
+# Подтягиваем зависимости и собираем проект
+RUN go mod tidy || true
 RUN go build -o main .
 
-# Команда для запуска вашего приложения
+# Команда для запуска (указываем путь к скомпилированному файлу внутри папки)
 CMD ["./main"]
