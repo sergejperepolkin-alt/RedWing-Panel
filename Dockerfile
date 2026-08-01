@@ -4,15 +4,14 @@ WORKDIR /app
 
 COPY . .
 
-# Исправление: находим директорию, где реально лежит корневой go.mod проекта, и собираем модуль оттуда
+# Абсолютно безошибочная сборка Go: проверяем корень и папки, если go.mod отсутствует, создаем его на лету
 RUN set -ex; \
-    MOD_PATH=$(find . -name "go.mod" | head -n 1); \
-    if [ -z "$MOD_PATH" ]; then \
-        go mod init redwingapp; \
+    if [ -f "go.mod" ]; then \
         go build -o /app/main .; \
+    elif [ -f "source/go.mod" ]; then \
+        cd source && go build -o /app/main .; \
     else \
-        MOD_DIR=$(dirname "$MOD_PATH"); \
-        cd "$MOD_DIR"; \
+        go mod init redwingapp; \
         go build -o /app/main .; \
     fi
 
