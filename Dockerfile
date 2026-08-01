@@ -26,5 +26,5 @@ WORKDIR /app
 # Копируем весь репозиторий
 COPY . .
 
-# Автоматически ищем папку с веб-файлами (source/web) и запускаем PHP-сервер на порту Render
-CMD ["bash", "-c", "WEB_DIR=$(find . -type d -name 'web' | head -n 1); if [ -z \"$WEB_DIR\" ]; then WEB_DIR='.'; fi; php -S 0.0.0.0:${PORT:-10000} -t \"$WEB_DIR\""]
+# Запускаем встроенный PHP-сервер прямо из папки source/web на порту Render
+CMD ["php", "-S", "0.0.0.0:10000", "-t", "source/web"]
